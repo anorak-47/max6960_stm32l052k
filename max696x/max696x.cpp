@@ -18,8 +18,6 @@
 #endif
 #endif
 
-#define DISPLAY_PAGE_HEIGHT ((NUMBER_OF_DRIVERS_PER_ROW * 8) / 2)
-
 //-------------------------------------------------------------------------------------------------------
 // Strings stored in PROGMEM - only required if debug mode used
 
@@ -67,43 +65,28 @@ PGM_P commandRegisterStringTable[] = {DRIVER_ADDR_STR,
 //------------------------------------------------------------------------------------
 // max696x initialization constructor
 
-void max696x::max696x()
+max696x::max696x(max696x_spi *spi, int16_t w, int16_t h) : Adafruit_GFX(w, h), _spi(spi)
 {
 #if MAX696x_DEBUG == 1
     memset(stringBuffer, 0x00, 64);
 #endif // MAX696x_DEBUG
 }
 
+max696x::~max696x()
+{
+}
+
 //------------------------------------------------------------------------------------
 // max696x initialization routine
 
-void max696x::io_init(void)
+void max696x::init(uint8_t gpc_p, uint8_t pi_p, uint8_t pis_p, uint8_t gdd_p, uint8_t gdr_p, uint8_t gplc_p)
 {
-#ifdef __AVR__
-#ifdef __ARDUINO__
-	digitalWrite(RESET, HIGH);
-	pinMode(RESET, OUTPUT);
-	pinMode(INTERRUPT, INPUT);
-#else
-    RESET_PORT |= (_BV(RESET_BIT));
-    RESET_DDR |= (_BV(RESET_BIT));
-    INTERRUPT_DDR &= ~(_BV(INTERRUPT_BIT));
-#endif
-#endif
-#ifdef __ARM__
-#endif
-}
-
-void max696x::init(max696x_spi *spi, uint8_t gpc_p, uint8_t pi_p, uint8_t pis_p, uint8_t gdd_p, uint8_t gdr_p, uint8_t gplc_p)
-{
-	_spi = spi;
-
-	// set up general I/O pins
+// set up general I/O pins
 #if MAX696x_DEBUG == 1
     LS_("Setting up I/O lines...");
 #endif // MAX696x_DEBUG == 1
 
-    io_init();
+    _spi->io_init();
 
 #if MAX696x_DEBUG == 1
     LS_(" done");
@@ -114,7 +97,7 @@ void max696x::init(max696x_spi *spi, uint8_t gpc_p, uint8_t pi_p, uint8_t pis_p,
     LS_("Setting up SPI interface...");
 #endif // MAX696x_DEBUG == 1
 
-    spi->spi_init();
+    _spi->spi_init();
 
 #if MAX696x_DEBUG == 1
     LS_(" done");
@@ -576,6 +559,24 @@ void max696x::set_intensity(uint8_t value)
 
 //-------------------------------------------------------
 
+void max696x::invertDisplay(bool i)
+{
+    byte gpc;
+
+    // store the GPC register setting of the display
+    gpc = command_rd(GLOBAL_PANEL_CONFIG, GLOBAL);
+
+    if (i)
+        gpc |= GPC_PIXEL_INVERT;
+    else
+        gpc &= ~GPC_PIXEL_INVERT;
+
+    // set the display to invert the pixels.
+    command_wr(GLOBAL_PANEL_CONFIG, gpc, GLOBAL);
+}
+
+//-------------------------------------------------------
+
 void max696x::shutdown()
 {
     uint8_t data = command_rd(GLOBAL_PANEL_CONFIG, GLOBAL);
@@ -588,143 +589,4 @@ void max696x::enable()
 {
     uint8_t data = command_rd(GLOBAL_PANEL_CONFIG, GLOBAL);
     command_wr(GLOBAL_PANEL_CONFIG, data | GPC_ENABLE, GLOBAL);
-}
-
-//-------------------------------------------------------
-
-void max696x::switch_active_plane_2bpp(void)
-{
-    // read the current memory plane being displayed
-    uint8_t panel = command_rd(GLOBAL_PANEL_CONFIG, GLOBAL);
-    panel = panel & 0x8C; // mask out bits we're not interested in
-
-    if (panel == GPC_PLANE1_2BPP)
-    {
-#if MAX696x_DEBUG == 1
-        LS_("--> 0");
-#endif
-        command_wr(GLOBAL_PLANE_COUNTER, 0, GLOBAL);
-    }
-    else if (panel == GPC_PLANE0_2BPP)
-    {
-#if MAX696x_DEBUG == 1
-        LS_("--> 1");
-#endif
-        command_wr(GLOBAL_PLANE_COUNTER, 1, GLOBAL);
-    }
-}
-
-//-------------------------------------------------------
-
-void max696x::show_active_plane_2bpp(void)
-{
-#if MAX696x_DEBUG == 1
-    // read the current memory plane being displayed
-    uint8_t panel = command_rd(GLOBAL_PANEL_CONFIG, GLOBAL);
-    panel = panel & 0x8C; // mask out bits we're not interested in
-
-    if (panel == GPC_PLANE1_2BPP)
-    {
-        LS_("active plane: 1");
-    }
-    else if (panel == GPC_PLANE0_2BPP)
-    {
-        LS_("active plane: 0");
-    }
-#endif
-}
-
-//-------------------------------------------------------
-// a function to set one pixel
-
-void max696x::u8g_pb8v2_set_pixel_2bpp(uint8_t *b, uint8_t x, uint8_t y, uint8_t color_index)
-{
-    register uint8_t mask;
-    uint8_t *ptr = b;
-    // y -= b->p.page_y0;
-    // TODO: this limited to a display height of 8 pixel!
-    // if (y > 3)
-    if (y >= DISPLAY_PAGE_HEIGHT)
-        ptr += MAX696X_DISPLAY_WIDTH;
-    mask = 0x03;
-    y &= 0x03;
-    y <<= 1;
-    mask <<= y;
-    mask ^= 0xff;
-    color_index &= 3;
-    color_index <<= y;
-    ptr += x;
-    *ptr &= mask;
-    *ptr |= color_index;
-}
-
-void max696x::set_pixel_2bpp(uint8_t *b, uint8_t x, uint8_t y, uint8_t color)
-{
-    if (y >= MAX696X_DISPLAY_HEIGHT)
-        return;
-    if (x >= MAX696X_DISPLAY_WIDTH)
-        return;
-    u8g_pb8v2_set_pixel_2bpp(b, x, y, color);
-}
-
-// ------------------------------------------------------
-// A function to convert 1 Bit per pixel data to 2 Bit per
-// pixel data.  This function converts to 2 bpp full intensity
-// pixel shading from 1 bpp intensity.
-//
-
-unsigned char max696x::convert_to_2bpp(unsigned char dataIn)
-{
-    unsigned char dataOut = 0;
-    switch (dataIn)
-    {
-    case 0x01:
-        dataOut = 0x03;
-        break;
-    case 0x02:
-        dataOut = 0x0c;
-        break;
-    case 0x03:
-        dataOut = 0x0f;
-        break;
-    case 0x04:
-        dataOut = 0x30;
-        break;
-    case 0x05:
-        dataOut = 0x33;
-        break;
-    case 0x06:
-        dataOut = 0x3c;
-        break;
-    case 0x07:
-        dataOut = 0x3f;
-        break;
-    case 0x08:
-        dataOut = 0xc0;
-        break;
-    case 0x09:
-        dataOut = 0xc3;
-        break;
-    case 0x0A:
-        dataOut = 0xcc;
-        break;
-    case 0x0B:
-        dataOut = 0xcf;
-        break;
-    case 0x0C:
-        dataOut = 0xf0;
-        break;
-    case 0x0D:
-        dataOut = 0xf3;
-        break;
-    case 0x0E:
-        dataOut = 0xfc;
-        break;
-    case 0x0F:
-        dataOut = 0xff;
-        break;
-    default:
-        break;
-    }
-    return dataOut;
 }

@@ -9,6 +9,7 @@ public:
     virtual ~max696x_spi(){};
 
     virtual void spi_init() = 0;
+    virtual void io_init() = 0;
 
     //-------------------------------------------------------
     // Routine to transmit 8-bits of data via SPI interface

@@ -1,13 +1,13 @@
-#ifndef _MAX696X_SPI_MBED_H_
-#define _MAX696X_SPI_MBED_H_
+#ifndef _MAX696X_SPI_CH_H_
+#define _MAX696X_SPI_CH_H_
 
 #include "max696x_spi.h"
 
-class max696x_spi_mbed : public max696x_spi
+class max696x_spi_ch : public max696x_spi
 {
 public:
-	max696x_spi_mbed();
-    virtual ~max696x_spi_mbed(){};
+	max696x_spi_ch();
+    virtual ~max696x_spi_ch(){};
 
     virtual void spi_init() override;
     virtual void io_init() override;

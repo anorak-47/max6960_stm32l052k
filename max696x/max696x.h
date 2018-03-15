@@ -100,6 +100,7 @@
 // Include user application settings
 
 #include "max696x_conf.h"
+#include "Adafruit_GFX.h"
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -351,10 +352,11 @@ typedef uint8_t byte;
 
 class max696x_spi;
 
-class max696x
+class max696x : public Adafruit_GFX
 {
 public:
-	max696x();
+	max696x(max696x_spi *spi, int16_t w, int16_t h);
+	virtual ~max696x();
 
     //-------------------------------------------------------
     // Routine to set up MAX696x display drivers
@@ -380,15 +382,11 @@ public:
     //               PCR_RATE);                 // PCR_RATE is computed based on FRAME_AUTO and FRAME_RATE_FPS
     //
     //
-    void init(max696x_spi *spi, uint8_t gpc_p, uint8_t pi_p, uint8_t pis_p, uint8_t gdd_p, uint8_t gdr_p, uint8_t gplc_p);
+    void init(uint8_t gpc_p, uint8_t pi_p, uint8_t pis_p, uint8_t gdd_p, uint8_t gdr_p, uint8_t gplc_p);
 
     //-------------------------------------------------------
     // Routine to write to display memory from RAM using indirect addressing
     void mem_update(uint8_t *buffer, unsigned int bufferSize);
-
-    //-------------------------------------------------------
-    // Routine to convert 1BPP display data to 2BPP display data
-    unsigned char convert_to_2bpp(unsigned char dataIn);
 
     // ------------------------------------------------------
     // Run a device check
@@ -416,26 +414,16 @@ public:
     void set_intensity(uint8_t value);
 
     //-------------------------------------------------------
+    // Routine to invert display
+    virtual void invertDisplay(bool i) override;
+
+    //-------------------------------------------------------
     // Routine to set max696x into shutdown mode
     void shutdown();
 
     //-------------------------------------------------------
     // Routine to set max696x into enabled mode
     void enable();
-
-    //-------------------------------------------------------
-    // Routine to switch plane in 2bpp mode
-    void switch_active_plane_2bpp(void);
-
-    //-------------------------------------------------------
-    // Routine to show the active plane in 2bpp mode
-    // (MAX696x_DEBUG)
-    void show_active_plane_2bpp(void);
-
-    //-------------------------------------------------------
-    // Routine to set pixel in given buffer with given color
-    // in 2bpp mode
-    void set_pixel_2bpp(uint8_t *b, uint8_t x, uint8_t y, uint8_t color);
 
 protected:
     //-------------------------------------------------------
@@ -459,9 +447,6 @@ protected:
     uint8_t direct_mem_rd(volatile uint8_t plane, volatile unsigned int address);
 
 private:
-    void io_init();
-    void u8g_pb8v2_set_pixel_2bpp(uint8_t *b, uint8_t x, uint8_t y, uint8_t color_index);
-
     max696x_spi *_spi;
 
 #if MAX696x_DEBUG == 1
