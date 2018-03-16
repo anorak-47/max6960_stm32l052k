@@ -1,7 +1,4 @@
-#ifndef DEBUG_H_
-#define DEBUG_H_
-
-#include <stdio.h>
+#pragma once
 
 /* define macros, if debug is enabled */
 

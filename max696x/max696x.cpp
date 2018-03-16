@@ -1,6 +1,6 @@
 #include "max696x.h"
 #include "max696x_spi.h"
-#include "debug.h"
+#include "../debug.h"
 #include <string.h>
 
 #ifdef __AVR__
@@ -8,13 +8,19 @@
 #include <util/delay.h>
 #define delay_ms _delay_ms
 #else
-#ifdef __AVR__
+#ifdef __ARM__
 #define PROGMEM
 #define PGM_P char *
 #define strcpy_P strcpy
 #define delay_ms wait
 #else
-#error "ERROR: unsupported architecture"
+#warning "ERROR: unsupported architecture"
+
+#define PROGMEM
+#define PGM_P char *
+#define strcpy_P strcpy
+#define delay_ms(arg)
+
 #endif
 #endif
 

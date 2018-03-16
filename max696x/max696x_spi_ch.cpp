@@ -1,11 +1,12 @@
 
-#include "max696x_spi_mbed.h"
+#include "max696x_spi_ch.h"
+#include "max696x_conf.h"
 
 #if MAX696x_USE_HW_SPI == 0
 #error "MAX696x_USE_HW_SPI == 0 not implemented!"
 #endif
 
-max696x_spi_mbed::max696x_spi_mbed()
+max696x_spi_ch::max696x_spi_ch()
 {
 
 }
@@ -13,7 +14,7 @@ max696x_spi_mbed::max696x_spi_mbed()
 //-------------------------------------------------------
 // Routine to set up the SPI interface
 
-void max696x_spi_mbed::spi_init()
+void max696x_spi_ch::spi_init()
 {
 	// Initialize I/O pins used in SPI
 
@@ -50,7 +51,7 @@ void max696x_spi_mbed::spi_init()
 #endif
 }
 
-void max696x_spi_mbed::io_init()
+void max696x_spi_ch::io_init()
 {
 #ifdef __AVR__
 #ifdef __ARDUINO__
@@ -84,17 +85,19 @@ void max696x_spi_mbed::io_init()
 //
 // Return: nothing
 
-void max696x_spi_mbed::spi_send8(uint8_t data)
+void max696x_spi_ch::spi_send8(uint8_t data)
 {
+#ifdef __AVR__
     // send the data
     SPDR = data;
     // wait for it to be clocked out
     while (!(SPSR & _BV(SPIF)))
     {
     }
+#endif
 }
 
-void max696x_spi_mbed::spi_send(uint8_t *data, uint8_t length)
+void max696x_spi_ch::spi_send(uint8_t *data, uint8_t length)
 {
 	cs_low();
 	//TODO: write buffer
@@ -118,8 +121,9 @@ void max696x_spi_mbed::spi_send(uint8_t *data, uint8_t length)
 //
 // Return: 8-bits of data
 
-uint8_t max696x_spi_mbed::spi_receive8()
+uint8_t max696x_spi_ch::spi_receive8()
 {
+#ifdef __AVR__
     // send some dummy data
     SPDR = 0x00;
     // wait for it to be clocked out
@@ -128,22 +132,28 @@ uint8_t max696x_spi_mbed::spi_receive8()
     }
     // read the data clocked in and return it
     return SPDR;
+#endif
+    return 0;
 }
 
 //-------------------------------------------------------
 // Routine to take CS low
 
-void max696x_spi_mbed::cs_low()
+void max696x_spi_ch::cs_low()
 {
+#ifdef __AVR__
     // take CS low
     SLAVESELECT_PORT__ = SLAVESELECT_PORT & ~_BV(SLAVESELECT_BIT);
+#endif
 }
 
 //-------------------------------------------------------
 // Routine to take CS high
 
-void max696x_spi_mbed::cs_high()
+void max696x_spi_ch::cs_high()
 {
+#ifdef __AVR__
     // take CS high
     SLAVESELECT_PORT__ = SLAVESELECT_PORT | _BV(SLAVESELECT_BIT);
+#endif
 }

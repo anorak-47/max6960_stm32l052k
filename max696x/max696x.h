@@ -100,7 +100,7 @@
 // Include user application settings
 
 #include "max696x_conf.h"
-#include "Adafruit_GFX.h"
+#include "../gfx/Adafruit_GFX.h"
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -355,8 +355,8 @@ class max696x_spi;
 class max696x : public Adafruit_GFX
 {
 public:
-	max696x(max696x_spi *spi, int16_t w, int16_t h);
-	virtual ~max696x();
+    max696x(max696x_spi *spi, int16_t w, int16_t h);
+    virtual ~max696x();
 
     //-------------------------------------------------------
     // Routine to set up MAX696x display drivers

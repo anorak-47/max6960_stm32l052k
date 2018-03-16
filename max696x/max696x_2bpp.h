@@ -12,7 +12,6 @@ public:
 
     void display();
     void clearDisplay();
-    virtual void invertDisplay(bool i) override;
 
     virtual void drawPixel(int16_t x, int16_t y, uint16_t color) override;
 

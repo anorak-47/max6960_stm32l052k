@@ -1,21 +1,6 @@
 #include "max696x_2bpp.h"
-#include "debug.h"
+#include "../debug.h"
 #include <string.h>
-
-#ifdef __AVR__
-#include <avr/pgmspace.h>
-#include <util/delay.h>
-#define delay_ms _delay_ms
-#else
-#ifdef __AVR__
-#define PROGMEM
-#define PGM_P char *
-#define strcpy_P strcpy
-#define delay_ms wait
-#else
-#error "ERROR: unsupported architecture"
-#endif
-#endif
 
 #define DISPLAY_PAGE_HEIGHT ((NUMBER_OF_DRIVERS_PER_ROW * 8) / 2)
 
